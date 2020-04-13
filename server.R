@@ -17,13 +17,13 @@ library(ggpubr)
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
 
-    output$gammaSlider <- renderUI({
-        sliderInput("gammaInit",
-                    "Initial recovery rate (gamma):",
-                    min = round(1/42,3),
-                    max = round(1/input$gammaUpper,3),
-                    value = round(1/14,3))
-    })
+    # output$gammaSlider <- renderUI({
+    #     sliderInput("gammaInit",
+    #                 "Initial recovery rate (gamma):",
+    #                 min = round(1/42,3),
+    #                 max = round(1/input$gammaUpper,3),
+    #                 value = round(1/14,3))
+    # })
     
    
     output$sirplot <- renderPlot({
@@ -90,8 +90,8 @@ shinyServer(function(input, output) {
         init <- c(S=N-Infected[1]-Recovered[1]-Death[1], I=Infected[1]-Death[1]-Recovered[1], R=Recovered[1]+Death[1])
         
         parameters_values <- c(initBeta, initGamma)  # seem no longer stuck at local minima if take middle values?
-        parameters_values_lower <- c(1/14, 1/42)
-        parameters_values_upper <- c(1, (1/gammaUpper))
+        parameters_values_lower <- c(1/100, 1/49) # days recover 6 weeks, set around 7 weeks for flexibility
+        parameters_values_upper <- c(1, (1/11)) # updated to min 11 days
         
         Opt <- optim(parameters_values, RSS, method = "L-BFGS-B", lower = parameters_values_lower, upper = parameters_values_upper)
         Opt_par <- setNames(Opt$par, c("beta", "gamma"))
