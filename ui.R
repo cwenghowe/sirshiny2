@@ -21,13 +21,18 @@ shinyUI(fluidPage(
         sidebarPanel(
             h4("Contributors:"),
             p("Chan Weng Howe (UTM), Wan Nor Arifin (USM)"),
-            p("updated: 13-Apr-2020"),
+            p("updated: 14-Apr-2020"),
             p(HTML("<br/>")),
             
             width="3",
             selectInput("period",
                         "Analysis period:",
-                        c("Pre MCO", "MCO Phase 1", "MCO Phase 2")),
+                        c("Pre MCO (1-Mar - 17-Mar)", "MCO Phase 1 (18-Mar - 31-Mar)", "MCO Phase 2 (01-Apr - 07-Apr)", "Custom")),
+            uiOutput("dateSelect"),
+            uiOutput('enddateSelect'),
+            selectInput("scale",
+                        "Display scale:",
+                        c("Normal", "Log")),
             sliderInput("N",
                         "Susceptible (% of Malaysian population):",
                         min = 1,
@@ -44,9 +49,9 @@ shinyUI(fluidPage(
                         max = round(1/11,3),
                         value = round(1/14,3)),
             # uiOutput("gammaSlider"),
-            numericInput('gammaUpper',
-                      'Upper Limit of recovery days:',
-                      value = 11)
+            # numericInput('gammaUpper',
+            #           'Upper Limit of recovery days:',
+            #           value = 11)
         ),
 
         # Show a plot of the generated distribution

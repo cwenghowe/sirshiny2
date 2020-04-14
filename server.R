@@ -24,17 +24,33 @@ shinyServer(function(input, output) {
     #                 max = round(1/input$gammaUpper,3),
     #                 value = round(1/14,3))
     # })
+    output$dateSelect <- renderUI({
+        if(input$period=="Custom") {
+            dateInput("startDate",
+                      "Start Date",
+                      min = "2020-03-01",
+                      value="2020-03-01")
+        }
+    })
     
+    output$enddateSelect <- renderUI({
+        if(input$period=="Custom") {
+            dateInput("endDate",
+                      "Start Date",
+                      min = "2020-03-07",
+                      value="2020-03-07")
+        }
+    })
    
     output$sirplot <- renderPlot({
         
-        generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period)
+        generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate)
 
-    },height=450)
+    }, height=500)
     
 
     
-    generateSIR <- function(susceptible, initBeta, initGamma,gammaUpper, period) {
+    generateSIR <- function(susceptible, initBeta, initGamma,gammaUpper, period, scale, startDate, endDate) {
         
         # SIR model
         # S - Susceptible, I - Infected, R - Removed (recovered + death)
@@ -64,18 +80,22 @@ shinyServer(function(input, output) {
         N <- N * (susceptible/100)
         
         # Based on the chosen period, set the start date and end date
-        if(period=="Pre MCO") {
-            name = "Pre MCO"
+        if(period=="Pre MCO (1-Mar - 17-Mar)") {
+            name = "Pre MCO (1-Mar - 17-Mar)"
             start_date  <- "2020-03-01"
             end_date    <- "2020-03-17"
-        } else if(period == "MCO Phase 1") {
-            name = "MCO 1"
+        } else if(period == "MCO Phase 1 (18-Mar - 31-Mar)") {
+            name = "MCO Phase 1 (18-Mar - 31-Mar)"
             start_date  <- "2020-03-18"
             end_date    <- "2020-03-31"
-        } else if(period == "MCO Phase 2") {
-            name = "MCO 2"
+        } else if(period == "MCO Phase 2 (01-Apr - 07-Apr)") {
+            name = "MCO Phase 2 (01-Apr - 07-Apr)"
             start_date  <- "2020-04-01" 
-            end_date    <- "2020-04-14"
+            end_date    <- "2020-04-07"
+        } else if(period == "Custom") {
+            name = "Custom Range"
+            start_date <- startDate
+            end_date   <- endDate
         }
 
         
@@ -126,6 +146,7 @@ shinyServer(function(input, output) {
         colors = c("Susceptible" = "black", "Recovered" = "#74C365", "Infectious" = "red", "Observed Active" = "orange")
 
         theme_set(theme_gray(base_size = 14))
+        if(scale=="Normal") {
         # plot projection data
         sirplot1 = ggplot(fitted_projected, aes(x = Date)) +
             geom_line(aes(y = I, color = "Infectious"),size=1) +
@@ -145,9 +166,9 @@ shinyServer(function(input, output) {
             annotate(geom = "text", x = as.Date(max_date)+20, y = N,
                      label = paste0("Peak on ", format(max_date, "%d/%m/%y")), angle = 0) +
             theme(axis.text.x = element_text(angle = 45, hjust = 1))
-        
+        } else {
         # plot projection data, in log10
-        sirplot1_log = ggplot(fitted_projected, aes(x = Date)) + 
+        sirplot1 = ggplot(fitted_projected, aes(x = Date)) + 
             geom_line(aes(y = I, color = "Infectious"),size=1) + 
             geom_line(aes(y = S, color = "Susceptible"),size=1) + 
             geom_line(aes(y = R, color = "Recovered"),size=1) +
@@ -165,9 +186,9 @@ shinyServer(function(input, output) {
             annotate(geom = "text", x = as.Date(max_date)+20, y = 1E5, 
                      label = paste0("Peak on ", format(max_date, "%d/%m/%y")), angle = 0) +
             theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        }
         
-        
-        ggarrange(sirplot1_log,sirplot1)
+        sirplot1
     }
    
 })
