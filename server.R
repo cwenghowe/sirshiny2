@@ -17,19 +17,21 @@ library(ggpubr)
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
 
+    mys_data <- read_csv("https://wnarifin.github.io/covid-19-malaysia/covid-19_my_full.csv") %>% select(1:10) %>% rename(Date = "date")  # uncomment
+    
     output$gammaSlider <- renderUI({
         if(input$type=="Optimization") {
             sliderInput("gammaInit",
                     "Initial recovery rate (gamma):",
-                    min = round(1/49,3),
-                    max = round(1,3),
-                    value = round(1/14,3))
+                    min = round(1/49,4),
+                    max = round(1.000,4),
+                    value = round(1/14,4))
         } else {
             sliderInput("gammaInit",
                     "Recovery rate (gamma):",
-                    min = round(1/49,3),
-                    max = round(1,3),
-                    value = round(1/14,3))
+                    min = round(1/49,4),
+                    max = round(1,4),
+                    value = round(1/14,4))
         }
     })
     
@@ -37,15 +39,15 @@ shinyServer(function(input, output) {
         if(input$type=="Optimization") {
             sliderInput("betaInit",
                         "Initial contact rate (beta):",
-                        min = round(1/100,3),
+                        min = round(1/100,4),
                         max = round(1,3),
-                        value = round(1/2,3))
+                        value = round(1/2,4))
         } else {
             sliderInput("betaInit",
                         "Contact rate (beta):",
-                        min = round(1/100,3),
-                        max = round(1,3),
-                        value = round(1/2,3))
+                        min = round(1/100,4),
+                        max = round(1,4),
+                        value = round(1/2,4))
         }
     })
     
@@ -69,15 +71,21 @@ shinyServer(function(input, output) {
         }
     })
    
+    # UNCOMMENT IF WANT TO DISPLAY AS PLOTLY
+    # output$sirplot <- renderPlotly({
+    #     
+    #     generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate, input$type)
+    # 
+    # })
     output$sirplot <- renderPlot({
         
-        generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate, input$type)
-
+        generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate, input$type, input$projectPeriod)
+        
     }, height=600)
     
 
     
-    generateSIR <- function(susceptible, initBeta, initGamma,gammaUpper, period, scale, startDate, endDate, type) {
+    generateSIR <- function(susceptible, initBeta, initGamma,gammaUpper, period, scale, startDate, endDate, type, projectEndDate) {
         
         # SIR model
         # S - Susceptible, I - Infected, R - Removed (recovered + death)
@@ -100,7 +108,7 @@ shinyServer(function(input, output) {
             sum((log(Active) - log(fit))^2)  # find min RSS on log scale
         }
         
-        mys_data <- read_csv("https://wnarifin.github.io/covid-19-malaysia/covid-19_my_full.csv") %>% select(1:10) %>% rename(Date = "date")  # uncomment
+        # mys_data <- read_csv("https://wnarifin.github.io/covid-19-malaysia/covid-19_my_full.csv") %>% select(1:10) %>% rename(Date = "date")  # uncomment
         
         # Apply the chosen percentage for the susceptible population
         N <- 32.68E6
@@ -163,7 +171,7 @@ shinyServer(function(input, output) {
         R2 = 1 - (rss / tss); R2
         
         # last date to project
-        last_date = "2020-09-30"
+        last_date = projectEndDate
         # time in days for predictions
         t = 1:as.integer(ymd(last_date) + 1 - ymd(start_date))
         # get the fitted values from our SIR model
@@ -179,7 +187,7 @@ shinyServer(function(input, output) {
         # color settings
         colors = c("Susceptible" = "black", "Recovered" = "#74C365", "Infectious" = "red", "Observed Active" = "orange")
 
-        theme_set(theme_gray(base_size = 14))
+        theme_set(theme_gray(base_size = 12))
         if(scale=="Normal") {
         # plot projection data
         sirplot1 = ggplot(fitted_projected, aes(x = Date)) +
@@ -200,6 +208,26 @@ shinyServer(function(input, output) {
             annotate(geom = "text", x = as.Date(max_date)+20, y = N,
                      label = paste0("Peak on ", format(max_date, "%d/%m/%y")), angle = 0) +
             theme(axis.text.x = element_text(angle = 45, hjust = 1))
+        
+            
+        # UNCOMMENT FOLLOW TO ENABLE PLOTLY TYPE OF PLOT
+        # ggplotly(sirplot1, height=600) %>%
+        #     layout(
+        #         title = list(
+        #             text = paste0("COVID-19 SIR model Malaysia,", name, "\n\n\n\n",
+        #                           "<sup>\t\t\tR square = ", round(R2,3), "\n",
+        #                           "\t\t\tR0 = ", round(R0, 3), "\n",
+        #                           "\t\t\tbeta = ", round(Opt_par[1], 3), "\n",
+        #                           "\t\t\tgamma = ", round(Opt_par[2], 3), "\n",
+        #                           "\t\t\tMax Active = ", round(max(fitted_projected$I)), "</sup>\n")
+        #     ),
+        #     legend = list(
+        #         orientation = "h",
+        #         y = -0.2,
+        #         text="test-----"
+        #     )
+        # ) %>% config(displayModeBar = FALSE)
+        
         } else {
         # plot projection data, in log10
         sirplot1 = ggplot(fitted_projected, aes(x = Date)) + 
@@ -220,8 +248,27 @@ shinyServer(function(input, output) {
             annotate(geom = "text", x = as.Date(max_date)+20, y = 1E5, 
                      label = paste0("Peak on ", format(max_date, "%d/%m/%y")), angle = 0) +
             theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        
+        # UNCOMMENT FOLLOW TO ENABLE PLOTLY TYPE OF PLOT
+        # ggplotly(sirplot1, height=600) %>%
+        #     layout(
+        #         title = list(
+        #             text = paste0("COVID-19 SIR model Malaysia,", name, " log10", "\n\n\n\n",
+        #                           "<sup>\t\t\tR square = ", round(R2,3), "\n",
+        #                           "\t\t\tR0 = ", round(R0, 3), "\n",
+        #                           "\t\t\tbeta = ", round(Opt_par[1], 3), "\n",
+        #                           "\t\t\tgamma = ", round(Opt_par[2], 3), "\n",
+        #                           "\t\t\tMax Active = ", round(max(fitted_projected$I)), "</sup>\n")
+        #     ),
+        #     legend = list(
+        #         orientation = "h",
+        #         y = -0.2,
+        #         x = 0.25
+        #     )
+        # ) %>% config(displayModeBar = FALSE)
         }
         
+        # UNCOMMENT IF WANT TO DISPLAY AS PLOTLY TYPE
         sirplot1
     }
    

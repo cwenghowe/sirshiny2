@@ -52,16 +52,22 @@ shinyUI(fluidPage(
             #             max = round(1,3),
             #             value = round(1/14,3)),
             uiOutput("gammaSlider"),
-            uiOutput("betaSlider")
+            uiOutput("betaSlider"),
             # numericInput('gammaUpper',
             #           'Upper Limit of recovery days:',
             #           value = 11)
+            dateInput("projectPeriod",
+                      "Projection until:",
+                      min="2020-07-31",
+                        value="2020-09-30")
         ),
 
         # Show a plot of the generated distribution
 
         mainPanel(
+            width=9,
             plotOutput("sirplot")
+            # plotlyOutput("sirplot") # UNCOMMENT IF WANT TO OUTPUT AS PLOTLY
         )
     )
 ))
