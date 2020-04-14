@@ -17,13 +17,40 @@ library(ggpubr)
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
 
-    # output$gammaSlider <- renderUI({
-    #     sliderInput("gammaInit",
-    #                 "Initial recovery rate (gamma):",
-    #                 min = round(1/42,3),
-    #                 max = round(1/input$gammaUpper,3),
-    #                 value = round(1/14,3))
-    # })
+    output$gammaSlider <- renderUI({
+        if(input$type=="Optimization") {
+            sliderInput("gammaInit",
+                    "Initial recovery rate (gamma):",
+                    min = round(1/49,3),
+                    max = round(1,3),
+                    value = round(1/14,3))
+        } else {
+            sliderInput("gammaInit",
+                    "Recovery rate (gamma):",
+                    min = round(1/49,3),
+                    max = round(1,3),
+                    value = round(1/14,3))
+        }
+    })
+    
+    output$betaSlider <- renderUI({
+        if(input$type=="Optimization") {
+            sliderInput("betaInit",
+                        "Initial contact rate (beta):",
+                        min = round(1/100,3),
+                        max = round(1,3),
+                        value = round(1/2,3))
+        } else {
+            sliderInput("betaInit",
+                        "Contact rate (beta):",
+                        min = round(1/100,3),
+                        max = round(1,3),
+                        value = round(1/2,3))
+        }
+    })
+    
+    
+    
     output$dateSelect <- renderUI({
         if(input$period=="Custom") {
             dateInput("startDate",
@@ -44,13 +71,13 @@ shinyServer(function(input, output) {
    
     output$sirplot <- renderPlot({
         
-        generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate)
+        generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate, input$type)
 
-    }, height=500)
+    }, height=600)
     
 
     
-    generateSIR <- function(susceptible, initBeta, initGamma,gammaUpper, period, scale, startDate, endDate) {
+    generateSIR <- function(susceptible, initBeta, initGamma,gammaUpper, period, scale, startDate, endDate, type) {
         
         # SIR model
         # S - Susceptible, I - Infected, R - Removed (recovered + death)
@@ -111,11 +138,18 @@ shinyServer(function(input, output) {
         
         parameters_values <- c(initBeta, initGamma)  # seem no longer stuck at local minima if take middle values?
         parameters_values_lower <- c(1/100, 1/49) # days recover 6 weeks, set around 7 weeks for flexibility
-        parameters_values_upper <- c(1, (1/11)) # updated to min 11 days
+        parameters_values_upper <- c(1, (1)) # updated to min 11 days
         
-        Opt <- optim(parameters_values, RSS, method = "L-BFGS-B", lower = parameters_values_lower, upper = parameters_values_upper)
-        Opt_par <- setNames(Opt$par, c("beta", "gamma"))
-        R0 <- (Opt_par['beta']/Opt_par['gamma']); names(R0) <- "R0"
+        if(type=="Optimization") {
+            Opt <- optim(parameters_values, RSS, method = "L-BFGS-B", lower = parameters_values_lower, upper = parameters_values_upper)
+            Opt_par <- setNames(Opt$par, c("beta", "gamma"))
+            R0 <- (Opt_par['beta']/Opt_par['gamma']); names(R0) <- "R0"
+        } else {
+            Opt_par <- vector()
+            Opt_par['beta'] <- initBeta
+            Opt_par['gamma'] <- initGamma
+            R0 <- (Opt_par['beta']/Opt_par['gamma']); names(R0) <- "R0"
+        }
         
         # time in days for predictions
         t = 1:max(Day)
