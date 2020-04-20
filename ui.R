@@ -40,6 +40,7 @@ shinyUI(fluidPage(
             selectInput("period",
                         "Analysis period:",
                         c(paste0("MCO to date (18-Mar -",format(today()-1,"%d-%b"),")"),
+                          "MCO Phase 1+2 (25-Mar - 18-Apr)",
                           "MCO Phase 2 (01-Apr - 14-Apr)", 
                           "MCO Phase 1 (18-Mar - 31-Mar)",
                           "Pre MCO (1-Mar - 17-Mar)")),
@@ -83,6 +84,7 @@ shinyUI(fluidPage(
             width=9,
             # shinycssloaders::withSpinner(plotOutput('sirplot'), type = 3)
             addSpinner(shiny::plotOutput("sirplot"))
+            # addSpinner(plotly::plotlyOutput("sirplot"))
             # plotlyOutput("sirplot") # UNCOMMENT IF WANT TO OUTPUT AS PLOTLY
         )
     )

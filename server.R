@@ -65,16 +65,16 @@ shinyServer(function(input, output) {
    
     # UNCOMMENT IF WANT TO DISPLAY AS PLOTLY
     # output$sirplot <- renderPlotly({
-    #     
-    #     generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate, input$type)
     # 
+    #     #generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate, input$type)
+    #     generateSIR(input$period, input$scale, input$projectPeriod)
     # })
     
     output$sirplot <- renderPlot({
-        
+
         # generateSIR(input$N, input$betaInit, input$gammaInit, input$gammaUpper, input$period, input$scale, input$startDate, input$endDate, input$type, input$projectPeriod)
         generateSIR(input$period, input$scale, input$projectPeriod)
-        
+
     }, height=800)
     
 
@@ -135,6 +135,10 @@ shinyServer(function(input, output) {
         } else if(period == paste0("MCO to date (18-Mar -",format(today()-1,"%d-%b"),")")) {
             name = paste0("MCO to date (18-Mar -",format(today()-1,"%d-%b"),")")
             start_date <- "2020-03-18"
+            end_date <- "2020-04-18"
+        } else if (period=="MCO Phase 1+2 (25-Mar - 18-Apr)") {
+            name = "MCO Phase 1+2 (25-Mar - 18-Apr)"
+            start_date <- "2020-03-25"
             end_date <- "2020-04-18"
         }
 
@@ -373,24 +377,54 @@ shinyServer(function(input, output) {
             
         } else {
         # plot projection data, in log10
-        sirplot1 = ggplot(fitted_projected, aes(x = Date)) + 
-            geom_line(aes(y = I, color = "Infectious"),size=1) + 
-            geom_line(aes(y = S, color = "Susceptible"),size=1) + 
-            geom_line(aes(y = R, color = "Recovered"),size=1) +
-            geom_point(aes(y = A, color = "Observed Active")) +
-            scale_y_log10(labels = scales::comma) +
-            scale_x_date(date_breaks = "14 day", date_labels = "%d/%m/%y") + 
-            scale_colour_manual(values = colors) +
-            labs(y = "Active Cases", title = paste("COVID-19 SIR model Malaysia,", name, "log10"), 
-                 color = paste0("R square = ", round(R2,3), "\n",
-                                "R0 = ", round(R0, 3), "\n",
-                                "beta = ", round(Opt_par[1], 3), "\n",
-                                "gamma = ", round(Opt_par[2], 3), "\n",
-                                "Max Active = ", round(max(fitted_projected$I)), "\n")) +
-            geom_vline(xintercept = as.numeric(as.Date(max_date)), linetype = "dotted") +
-            annotate(geom = "text", x = as.Date(max_date)+20, y = 1E5, 
-                     label = paste0("Peak on ", format(max_date, "%d/%m/%y")), angle = 0) +
-            theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+            sirplot1 = ggplot(fitted_projected, aes(x = Date)) + 
+                geom_line(aes(y = I, color = "Infectious")) + 
+                geom_line(aes(y = S, color = "Susceptible")) + 
+                geom_line(aes(y = R, color = "Recovered")) +
+                geom_point(aes(y = A, color = "Observed Active")) +
+                geom_point(aes(y = Rm, color = "Observed Recovered")) +
+                scale_y_log10(labels = scales::comma) +
+                scale_x_date(date_breaks = "14 day", date_labels = "%d/%m/%y") + 
+                scale_colour_manual(values = colors) +
+                labs(y = "Number of cases", title = paste("COVID-19 SIR model Malaysia,", name, "log10"), 
+                     subtitle = paste("Projection from data:", start_date, "to", fitted_projected$Date[max(Day)]),
+                     color = paste0("R square 1 = ", round(R2_1,3), "\n",
+                                    "R square 2 = ", round(R2_2,3), "\n",
+                                    "R0 = ", round(R0, 3), "\n",
+                                    "beta = ", round(Opt_par[1], 3), "\n",
+                                    "gamma = ", round(Opt_par[2], 3), "\n",
+                                    "Susceptible = ", round(n), "\n",
+                                    "Peak Active = ", round(max(fitted_projected$I)), "\n",
+                                    "Maximum Total Infected = ", round(max(fitted_projected$total_infected)))) +
+                geom_vline(xintercept = as.numeric(as.Date(max_date)), linetype = "dotted") +
+                annotate(geom = "text", x = as.Date(max_date)+20, y = n*1.3, 
+                         label = paste0("Peak on ", format(max_date, "%d/%m/%y")), angle = 0) +
+                geom_vline(xintercept = as.numeric(as.Date(today())), linetype = "dotted", color = "red") +
+                annotate(geom = "text", x = as.Date(today())+25, y = n*0.7, 
+                         label = paste0("Today's Prediction (", format(today(), "%d/%m/%y"), ")\n",
+                                        "Total Cases = ", round(fitted_projected[fitted_projected$Date == today(), "total_infected"]),
+                                        "\nNew Cases = ", round(new_today)), angle = 0) +
+                theme(axis.text.x = element_text(angle = 45, hjust = 1))
+            
+        # sirplot1 = ggplot(fitted_projected, aes(x = Date)) + 
+        #     geom_line(aes(y = I, color = "Infectious"),size=1) + 
+        #     geom_line(aes(y = S, color = "Susceptible"),size=1) + 
+        #     geom_line(aes(y = R, color = "Recovered"),size=1) +
+        #     geom_point(aes(y = A, color = "Observed Active")) +
+        #     scale_y_log10(labels = scales::comma) +
+        #     scale_x_date(date_breaks = "14 day", date_labels = "%d/%m/%y") + 
+        #     scale_colour_manual(values = colors) +
+        #     labs(y = "Active Cases", title = paste("COVID-19 SIR model Malaysia,", name, "log10"), 
+        #          color = paste0("R square = ", round(R2,3), "\n",
+        #                         "R0 = ", round(R0, 3), "\n",
+        #                         "beta = ", round(Opt_par[1], 3), "\n",
+        #                         "gamma = ", round(Opt_par[2], 3), "\n",
+        #                         "Max Active = ", round(max(fitted_projected$I)), "\n")) +
+        #     geom_vline(xintercept = as.numeric(as.Date(max_date)), linetype = "dotted") +
+        #     annotate(geom = "text", x = as.Date(max_date)+20, y = 1E5, 
+        #              label = paste0("Peak on ", format(max_date, "%d/%m/%y")), angle = 0) +
+        #     theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
         
         # UNCOMMENT FOLLOW TO ENABLE PLOTLY TYPE OF PLOT
         # ggplotly(sirplot1, height=600) %>%
@@ -412,6 +446,7 @@ shinyServer(function(input, output) {
         }
         
         # UNCOMMENT IF WANT TO DISPLAY AS PLOTLY TYPE
+        # ggplotly(sirplot1, height = 800)
         sirplot1
     }
    
